@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1020">
+    <title>Stayfinder — Find your next stay</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #f2f5ff;
+        background: #0b1020;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --muted: #9ca8c1;
+        --line: #ffffff17;
+        --mint: #8ef0d0;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        position: relative;
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 38px 22px;
+        background:
+          radial-gradient(ellipse at 50% 4%, #1b2542 0%, #10172a 34%, #0b1020 76%);
+      }
+      body::before,
+      body::after {
+        position: fixed;
+        z-index: -1;
+        width: 42vw;
+        height: 42vw;
+        min-width: 340px;
+        min-height: 340px;
+        border-radius: 50%;
+        content: "";
+        filter: blur(100px);
+        opacity: .13;
+        pointer-events: none;
+        animation: drift 24s ease-in-out infinite alternate;
+      }
+      body::before {
+        top: -18vw;
+        left: -14vw;
+        background: #7168ff;
+      }
+      body::after {
+        right: -16vw;
+        bottom: -22vw;
+        background: #3bd4b0;
+        animation-delay: -12s;
+        animation-duration: 29s;
+      }
+      button, input { font: inherit; }
+      button { color: inherit; }
+
+      .app-shell {
+        width: min(100%, 970px);
+        overflow: hidden;
+        border: 1px solid #ffffff1c;
+        border-radius: 26px;
+        background: linear-gradient(145deg, #151d31f5, #101729f5);
+        box-shadow: 0 36px 110px #02040db3, inset 0 1px #ffffff0b;
+        backdrop-filter: blur(22px);
+        animation: rise-in .75s cubic-bezier(.2,.8,.2,1) both;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 28px;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .brand-mark {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1px solid #8ef0d04a;
+        border-radius: 14px;
+        color: var(--mint);
+        background: linear-gradient(145deg, #8ef0d019, #8ef0d005);
+      }
+      .brand-mark svg { width: 21px; height: 21px; }
+      .brand-name { margin: 0; font-size: .98rem; font-weight: 700; letter-spacing: .01em; }
+      .brand-caption { margin: 3px 0 0; color: var(--muted); font-size: .74rem; }
+      .topbar-right { display: flex; align-items: center; gap: 10px; }
+      .demo-pill, .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 30px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: #c3cce0;
+        background: #ffffff06;
+        font-size: .72rem;
+        font-weight: 600;
+      }
+      .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 12px #8ef0d07a; }
+
+      .intro { padding: 35px 46px 23px; }
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin: 0 0 13px;
+        color: var(--mint);
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .15em;
+        text-transform: uppercase;
+      }
+      .eyebrow-line { width: 20px; height: 1px; background: currentColor; opacity: .7; }
+      h1 {
+        max-width: 650px;
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.4rem);
+        font-weight: 620;
+        letter-spacing: -.055em;
+        line-height: 1.08;
+      }
+      h1 span {
+        color: transparent;
+        background: linear-gradient(100deg, #a5f4dd, #8db8ff 76%);
+        background-clip: text;
+        -webkit-background-clip: text;
+      }
+      .intro-copy { max-width: 510px; margin: 13px 0 0; color: var(--muted); font-size: .96rem; line-height: 1.65; }
+
+      .chat-panel {
+        margin: 0 28px;
+        overflow: hidden;
+        border: 1px solid #ffffff17;
+        border-radius: 20px;
+        background: #0a1020a6;
+        box-shadow: inset 0 1px #ffffff08;
+      }
+      .chat-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+      .chat-title { display: flex; align-items: center; gap: 9px; color: #d8e0f2; font-size: .79rem; font-weight: 650; }
+      .sparkle { color: var(--mint); font-size: 1rem; }
+      .chat-hint { color: #7f8ba5; font-size: .72rem; }
+      #messages {
+        display: flex;
+        min-height: 230px;
+        max-height: min(43vh, 430px);
+        flex-direction: column;
+        gap: 17px;
+        overflow-y: auto;
+        padding: 22px 22px 26px;
+        scrollbar-color: #46516d transparent;
+        scrollbar-width: thin;
+      }
+      .message {
+        max-width: min(82%, 650px);
+        padding: 13px 16px;
+        border: 1px solid transparent;
+        border-radius: 17px;
+        animation: message-in .28s ease-out both;
+        font-size: .9rem;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+      .assistant {
+        align-self: flex-start;
+        border-color: #ffffff12;
+        border-bottom-left-radius: 6px;
+        color: #d8e0f0;
+        background: linear-gradient(145deg, #1b263b, #172136);
+      }
+      .user {
+        align-self: flex-end;
+        border-color: #85e9ce28;
+        border-bottom-right-radius: 6px;
+        color: #f4fffc;
+        background: linear-gradient(130deg, #266b67, #285a70);
+      }
+      .hotel-list { display: grid; gap: 10px; margin-top: 14px; }
+      .hotel {
+        padding: 15px;
+        border: 1px solid #ffffff18;
+        border-radius: 13px;
+        background: #0e1728;
+      }
+      .hotel h3 { margin: 0 0 5px; color: #eef4ff; font-size: .93rem; }
+      .hotel p { margin: 5px 0; color: #aebbd0; font-size: .82rem; }
+      .hotel .rate { color: var(--mint); font-size: .9rem; font-weight: 700; }
+      .retry-button {
+        margin-top: 12px;
+        padding: 7px 11px;
+        border: 1px solid #8ef0d04a;
+        border-radius: 9px;
+        color: var(--mint);
+        background: #8ef0d00d;
+        cursor: pointer;
+        font-size: .78rem;
+        font-weight: 650;
+      }
+      .retry-button:hover { background: #8ef0d01c; }
+      .typing { display: flex; align-items: center; gap: 5px; min-width: 74px; }
+      .typing span { width: 6px; height: 6px; border-radius: 50%; background: #8ef0d0a6; animation: typing-pulse 1.1s ease-in-out infinite; }
+      .typing span:nth-child(2) { animation-delay: .15s; }
+      .typing span:nth-child(3) { animation-delay: .3s; }
+
+      .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 22px 17px; }
+      .suggestion {
+        padding: 8px 12px;
+        border: 1px solid #ffffff18;
+        border-radius: 999px;
+        color: #aebbd0;
+        background: #ffffff05;
+        cursor: pointer;
+        font-size: .75rem;
+        transition: border-color .18s ease, color .18s ease, background .18s ease;
+      }
+      .suggestion:hover { border-color: #8ef0d05e; color: #e1fff6; background: #8ef0d00a; }
+
+      .composer-wrap { padding: 17px 28px 19px; }
+      #chat-form {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 7px 8px 7px 17px;
+        border: 1px solid #ffffff20;
+        border-radius: 15px;
+        background: #0b1222;
+        transition: border-color .2s ease, box-shadow .2s ease;
+      }
+      #chat-form:focus-within { border-color: #8ef0d075; box-shadow: 0 0 0 3px #8ef0d012; }
+      #message-input {
+        width: 100%;
+        min-width: 0;
+        padding: 10px 0;
+        border: 0;
+        outline: 0;
+        color: #f2f5ff;
+        background: transparent;
+        font-size: .9rem;
+      }
+      #message-input::placeholder { color: #77839b; }
+      #send-button {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        place-items: center;
+        border: 0;
+        border-radius: 11px;
+        color: #10251f;
+        background: linear-gradient(140deg, #a4f3dd, #77d9c5);
+        cursor: pointer;
+        transition: transform .18s ease, opacity .18s ease, filter .18s ease;
+      }
+      #send-button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+      #send-button:disabled { opacity: .55; cursor: wait; }
+      #send-button svg { width: 19px; height: 19px; }
+      .composer-note { margin: 10px 3px 0; color: #75819a; font-size: .7rem; }
+      .notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin: 0;
+        padding: 14px 29px 19px;
+        border-top: 1px solid #ffffff0e;
+        color: #8995ac;
+        font-size: .73rem;
+        line-height: 1.5;
+      }
+      .notice svg { width: 14px; height: 14px; flex: 0 0 14px; margin-top: 1px; color: #d8b97b; }
+
+      @keyframes drift {
+        from { transform: translate3d(-3vw, -2vh, 0) scale(.94); }
+        to { transform: translate3d(5vw, 5vh, 0) scale(1.08); }
+      }
+      @keyframes rise-in {
+        from { opacity: 0; transform: translateY(14px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes message-in {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes typing-pulse {
+        0%, 60%, 100% { opacity: .38; transform: translateY(0); }
+        30% { opacity: 1; transform: translateY(-3px); }
+      }
+      @media (max-width: 620px) {
+        body { padding: 12px; }
+        .app-shell { border-radius: 21px; }
+        .topbar { padding: 16px 17px; }
+        .brand-mark { width: 38px; height: 38px; }
+        .demo-pill { display: none; }
+        .intro { padding: 28px 21px 20px; }
+        .intro-copy { font-size: .88rem; }
+        .chat-panel { margin: 0 12px; border-radius: 16px; }
+        .chat-toolbar { padding: 12px 14px; }
+        .chat-hint { display: none; }
+        #messages { min-height: 210px; padding: 17px 14px 20px; }
+        .message { max-width: 93%; font-size: .86rem; }
+        .suggestions { padding: 0 14px 15px; }
+        .composer-wrap { padding: 14px 12px 16px; }
+        .notice { padding: 12px 17px 16px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          scroll-behavior: auto !important;
+          animation-duration: .01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: .01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20V8.5L12 4l8 4.5V20M8 20v-5h8v5M8 10h.01M12 10h.01M16 10h.01" />
+            </svg>
+          </div>
+          <div>
+            <p class="brand-name">Stayfinder</p>
+            <p class="brand-caption">Thoughtful stays, easier to find</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span class="demo-pill">PREVIEW</span>
+          <span class="status-pill"><span class="status-dot"></span> Gemini assistant</span>
+        </div>
+      </header>
+
+      <section class="intro">
+        <p class="eyebrow"><span class="eyebrow-line"></span> YOUR NEXT GETAWAY STARTS HERE</p>
+        <h1>Find a stay that<br><span>feels like you.</span></h1>
+        <p class="intro-copy">Tell me what you have in mind. I can help you explore places, dates, guest counts, and the little details that make a trip yours.</p>
+      </section>
+
+      <section class="chat-panel" aria-label="Hotel search assistant">
+        <div class="chat-toolbar">
+          <div class="chat-title"><span class="sparkle" aria-hidden="true">✳</span> Trip planning assistant</div>
+          <span class="chat-hint">A little detail goes a long way</span>
+        </div>
+        <section id="messages" aria-live="polite" aria-label="Conversation"></section>
+        <div class="suggestions" aria-label="Try one of these prompts">
+          <button class="suggestion" type="button" data-prompt="A weekend in Paris for two">A weekend in Paris</button>
+          <button class="suggestion" type="button" data-prompt="Somewhere warm for a family of four">Somewhere warm</button>
+          <button class="suggestion" type="button" data-prompt="A cozy city break under $200 a night">Under $200 a night</button>
+        </div>
+      </section>
+
+      <div class="composer-wrap">
+        <form id="chat-form">
+          <input id="message-input" autocomplete="off" placeholder="Tell me about your trip..." aria-label="Your travel plans" required>
+          <button id="send-button" type="submit" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m5 12 14-7-5 14-3-6-6-1Z" /><path d="m11 13 4-4" />
+            </svg>
+          </button>
+        </form>
+        <p class="composer-note">You can change or add details as we go.</p>
+      </div>
+
+      <p class="notice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3 3.8 7v5.3c0 4.4 3 7.5 8.2 9.7 5.2-2.2 8.2-5.3 8.2-9.7V7L12 3Z" /><path d="M12 8v4M12 16h.01" />
+        </svg>
+        Preview only: hotel listings are sample data and do not show live availability, final prices, or bookable offers.
+      </p>
+    </main>
+
+    <script>
+      const messages = document.querySelector("#messages");
+      const form = document.querySelector("#chat-form");
+      const input = document.querySelector("#message-input");
+      const sendButton = document.querySelector("#send-button");
+      const suggestions = document.querySelector(".suggestions");
+      let criteria = {};
+
+      function addMessage(text, role, hotels = [], options = {}) {
+        const bubble = document.createElement("div");
+        bubble.className = `message ${role}`;
+        bubble.textContent = text;
+        if (hotels.length) {
+          const list = document.createElement("div");
+          list.className = "hotel-list";
+          for (const hotel of hotels) {
+            const card = document.createElement("article");
+            card.className = "hotel";
+            const title = document.createElement("h3");
+            title.textContent = `${hotel.name} · ${hotel.city}`;
+            const details = document.createElement("p");
+            details.textContent = `${hotel.rating}/5 · Sleeps up to ${hotel.max_guests}`;
+            const rate = document.createElement("p");
+            rate.className = "rate";
+            rate.textContent = `$${hotel.nightly_rate} per night`;
+            const description = document.createElement("p");
+            description.textContent = `${hotel.description} Amenities: ${hotel.amenities.join(", ")}.`;
+            card.append(title, details, rate, description);
+            list.append(card);
+          }
+          bubble.append(list);
+        }
+        if (options.retryMessage) {
+          const retry = document.createElement("button");
+          retry.className = "retry-button";
+          retry.type = "button";
+          retry.textContent = "Try again";
+          retry.addEventListener("click", () => sendMessage(options.retryMessage, false));
+          bubble.append(retry);
+        }
+        messages.append(bubble);
+        messages.scrollTop = messages.scrollHeight;
+        return bubble;
+      }
+
+      async function sendMessage(message, showUser = true) {
+        const text = message.trim();
+        if (!text || sendButton.disabled) return;
+        if (showUser) addMessage(text, "user");
+        input.value = "";
+        sendButton.disabled = true;
+        suggestions.hidden = true;
+        const loading = addMessage("", "assistant");
+        const dots = document.createElement("span");
+        dots.className = "typing";
+        dots.setAttribute("aria-label", "Thinking");
+        for (let index = 0; index < 3; index += 1) dots.append(document.createElement("span"));
+        loading.append(dots);
+
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text, criteria }),
+          });
+          let data;
+          try {
+            data = await response.json();
+          } catch {
+            throw new Error(`The server returned an unreadable response (HTTP ${response.status}). Please try again.`);
+          }
+          if (!response.ok) {
+            const detail = data.detail;
+            const errorMessage = Array.isArray(detail)
+              ? detail.map((item) => item.msg).join("; ")
+              : typeof detail === "string"
+                ? detail
+                : `The server could not process the request (HTTP ${response.status}). Please try again.`;
+            const error = new Error(errorMessage);
+            error.retryable = response.status >= 500;
+            throw error;
+          }
+          criteria = data.criteria;
+          loading.remove();
+          addMessage(data.reply, "assistant", data.hotels);
+        } catch (error) {
+          loading.remove();
+          const messageText = error instanceof TypeError
+            ? "I couldn't reach the chat service. Check your connection and try again."
+            : error.message;
+          addMessage(messageText, "assistant", [], error.retryable ? { retryMessage: text } : {});
+        } finally {
+          sendButton.disabled = false;
+          input.focus();
+        }
+      }
+
+      addMessage("Hi, I’m your trip-planning assistant. Where are you dreaming of going? Share whatever you know so far—even a rough idea is a great place to start.", "assistant");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendMessage(input.value);
+      });
+
+      suggestions.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-prompt]");
+        if (button) sendMessage(button.dataset.prompt);
+      });
+    </script>
+  </body>
+</html>
