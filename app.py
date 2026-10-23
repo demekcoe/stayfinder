@@ -171,6 +171,12 @@ def interpret_with_gemini(message: str, current: Criteria) -> Interpretation:
     except (APIError, InteractionsAPIError) as error:
         error_code = getattr(error, "code", None) or getattr(error, "status_code", None)
         error_message = getattr(error, "message", str(error))
+        error_body = getattr(error, "body", None)
+        if isinstance(error_body, dict):
+            nested_error = error_body.get("error")
+            if isinstance(nested_error, dict):
+                error_code = error_code or nested_error.get("code")
+                error_message = nested_error.get("message", error_message)
         if error_code in (401, 403):
             detail = (
                 "Google rejected the Gemini API key. Check GEMINI_API_KEY in your "
@@ -181,7 +187,7 @@ def interpret_with_gemini(message: str, current: Criteria) -> Interpretation:
                 "The Gemini API rate limit or quota was reached. Check your Google AI "
                 "Studio usage and billing, then try again."
             )
-        elif error_code == 503:
+        elif error_code == 503 or error_code == "service_unavailable":
             detail = (
                 "Gemini is temporarily busy due to high demand. Please wait a moment "
                 "and try sending your message again."

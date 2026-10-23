@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 from fastapi import HTTPException
 from google.genai.errors import APIError
+from google.genai._gaos.lib.compat_errors import APIError as InteractionsAPIError
 from google.genai._gaos.lib.compat_errors import InternalServerError
 from httpx import Request, Response
 
@@ -139,6 +140,28 @@ class HotelAgentTests(unittest.TestCase):
             "Gemini is experiencing high demand",
             response=response,
             body={"error": {"message": "Gemini is experiencing high demand"}},
+        )
+        client = Mock()
+        client.interactions.create.side_effect = error
+
+        with (
+            patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}),
+            patch("google.genai.Client", return_value=client),
+        ):
+            with self.assertRaises(HTTPException) as raised:
+                interpret_with_gemini("Paris for two", Criteria())
+
+        self.assertIn("temporarily busy", raised.exception.detail)
+        self.assertIn("try sending your message again", raised.exception.detail)
+
+    def test_gemini_service_unavailable_error_is_reported_as_temporary(self) -> None:
+        error = InteractionsAPIError(
+            message="service unavailable",
+            request=Request("POST", "https://generativelanguage.googleapis.com"),
+            body={"error": {
+                "message": "gemini-3.8-flash is experiencing high demand",
+                "code": "service_unavailable",
+            }},
         )
         client = Mock()
         client.interactions.create.side_effect = error
